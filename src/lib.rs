@@ -228,7 +228,12 @@ where
     ) -> Result<(), Error<PinE>> {
         self.set_address_window(sx, sy, ex, ey)?;
         self.write_command(Instruction::RAMWR)?;
-        self.di.send_data(U8(data)).map_err(|_| Error::DisplayError)
+        for chunk in data.chunks(4096) {
+            self.di
+                .send_data(U8(chunk))
+                .map_err(|_| Error::DisplayError)?;
+        }
+        Ok(())
     }
 
     ///

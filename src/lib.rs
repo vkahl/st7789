@@ -9,7 +9,7 @@ pub mod instruction;
 use crate::instruction::Instruction;
 use core::iter::once;
 
-use display_interface::DataFormat::{U16BEIter, U8Iter};
+use display_interface::DataFormat::{U16BEIter, U8};
 use display_interface::WriteOnlyDataCommand;
 use embedded_hal::blocking::delay::DelayUs;
 use embedded_hal::digital::v2::OutputPin;
@@ -204,6 +204,34 @@ where
     }
 
     ///
+    /// Sets pixel data in given rectangle bounds.
+    /// In some cases this function is significantly faster than `set_pixels`.
+    ///
+    /// # Arguments
+    ///
+    /// * `sx` - x coordinate start
+    /// * `sy` - y coordinate start
+    /// * `ex` - x coordinate end
+    /// * `ey` - y coordinate end
+    /// * `data` - a slice of bytes representing the pixel data
+    ///
+    /// `data` must be exactly long enough to fill the given rectangle bounds
+    /// with 16 bit values
+    ///
+    pub fn set_pixels_raw<T>(
+        &mut self,
+        sx: u16,
+        sy: u16,
+        ex: u16,
+        ey: u16,
+        data: &[u8],
+    ) -> Result<(), Error<PinE>> {
+        self.set_address_window(sx, sy, ex, ey)?;
+        self.write_command(Instruction::RAMWR)?;
+        self.di.send_data(U8(data)).map_err(|_| Error::DisplayError)
+    }
+
+    ///
     /// Sets scroll offset "shifting" the displayed picture
     /// # Arguments
     ///
@@ -224,15 +252,13 @@ where
 
     fn write_command(&mut self, command: Instruction) -> Result<(), Error<PinE>> {
         self.di
-            .send_commands(U8Iter(&mut once(command as u8)))
+            .send_commands(U8(&[command as u8]))
             .map_err(|_| Error::DisplayError)?;
         Ok(())
     }
 
     fn write_data(&mut self, data: &[u8]) -> Result<(), Error<PinE>> {
-        self.di
-            .send_data(U8Iter(&mut data.iter().cloned()))
-            .map_err(|_| Error::DisplayError)
+        self.di.send_data(U8(data)).map_err(|_| Error::DisplayError)
     }
 
     // Sets the address window for the display.

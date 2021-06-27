@@ -218,7 +218,7 @@ where
     /// `data` must be exactly long enough to fill the given rectangle bounds
     /// with 16 bit values
     ///
-    pub fn set_pixels_raw<T>(
+    pub fn set_pixels_raw(
         &mut self,
         sx: u16,
         sy: u16,
